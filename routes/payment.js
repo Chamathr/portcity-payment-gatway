@@ -1,7 +1,7 @@
 var express = require('express');
 var router = express.Router();
-const hostedCheckout = require('../controllers/hostedCheckout.controller')
+const payment = require('../controllers/payment.controller')
 
-router.get('/pay', hostedCheckout.makePayment);
+router.get('/pay', payment.makePayment);
 
 module.exports = router;
