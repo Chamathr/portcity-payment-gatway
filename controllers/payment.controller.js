@@ -9,7 +9,7 @@ require('dotenv').config()
 *
 * @return response for hostedCheckout.ejs
 */
-const makePayment = (request, response, next) => {
+const makePayment = async (request, response, next) => {
     const orderId = utils.keyGen(10);
     const requestData = {
         "apiOperation": "CREATE_CHECKOUT_SESSION",
@@ -25,7 +25,7 @@ const makePayment = (request, response, next) => {
     const apiRequest = { orderId: orderId };
     const requestUrl = gatewayService.getRequestUrl("REST", apiRequest);
     try {
-        gatewayService.getSession(requestData, function (result) {
+        gatewayService.getSession(requestData, (result) => {
             response.render(view_path + '/payment', {
                 "baseUrl": config.TEST_GATEWAY.BASEURL,
                 "apiVersion": config.TEST_GATEWAY.API_VERSION,
@@ -44,7 +44,8 @@ const makePayment = (request, response, next) => {
         });
     }
     catch (error) {
-        response.status(500).send(error);
+        // response.status(500).send(error);
+        response.render(view_path + '/error')
     }
 
 };
@@ -79,48 +80,54 @@ const makePayment = (request, response, next) => {
 * @param result of Hosted Checkout operation (success or error) - sent from hostedCheckout.ejs complete() callback
 * @return for hostedCheckoutReceipt page or error page
 */
-const getResponse = (request, response, next) => {
-    var result = request.params.result;
-    var orderId = request.params.orderId;
-    if (result == "SUCCESS") {
-        var apiRequest = { orderId: orderId };
-        var requestUrl = gatewayService.getRequestUrl("REST", apiRequest);
-        gatewayService.paymentResult(requestUrl, (error, result) => {
-            if (error) {
-                var reserror = {
-                    error: true,
-                    title: "hostedCheckoutReceipt",
-                    cause: "Payment was unsuccessful",
-                    explanation: "There was a problem completing your transaction.",
-                    field: null,
-                    validationType: null
+const getResponse = async (request, response, next) => {
+    const result = request.params.result;
+    const orderId = request.params.orderId;
+    try {
+        if (result == "SUCCESS") {
+            const apiRequest = { orderId: orderId };
+            const requestUrl = gatewayService.getRequestUrl("REST", apiRequest);
+            gatewayService.paymentResult(requestUrl, (error, result) => {
+                if (error) {
+                    const reserror = {
+                        error: true,
+                        title: "hostedCheckoutReceipt",
+                        cause: "Payment was unsuccessful",
+                        explanation: "There was a problem completing your transaction.",
+                        field: null,
+                        validationType: null
+                    }
+                    response.status(500).send(reserror);
+                } else {
+                    const ressuccess = {
+                        error: false,
+                        cause: "Payment was successful",
+                        message: "Your transaction was successfully completed",
+                        resbody: JSON.parse(result)
+                    }
+                    // response.render(view_path + '/hostedCheckoutReceipt', { title: "hostedCheckoutReceipt", resbody: ressuccess });
+                    // response.send(ressuccess)
+                    response.redirect('https://www.espncricinfo.com/')
                 }
-                response.status(500).send(reserror);
-            } else {
-                var ressuccess = {
-                    error: false,
-                    cause: "Payment was successful",
-                    message: "Your transaction was successfully completed",
-                    resbody: JSON.parse(result)
-                }
-                // response.render(view_path + '/hostedCheckoutReceipt', { title: "hostedCheckoutReceipt", resbody: ressuccess });
-                // response.send(ressuccess)
-                response.redirect('https://www.espncricinfo.com/')
+            });
+        } else {
+            const reserror = {
+                error: true,
+                title: "hostedCheckoutReceipt",
+                cause: "Payment was unsuccessful",
+                explanation: "There was a problem completing your transaction.",
+                field: null,
+                validationType: null
             }
-        });
-    } else {
-        var reserror = {
-            error: true,
-            title: "hostedCheckoutReceipt",
-            cause: "Payment was unsuccessful",
-            explanation: "There was a problem completing your transaction.",
-            field: null,
-            validationType: null
+            response.status(500).send(reserror);
+            next();
         }
-        response.status(500).send(reserror);
-        next();
     }
+    catch(error){
+        response.status(500).send(error);
+    }
+    
 };
 
 
-module.exports = {makePayment, getResponse};
+module.exports = { makePayment, getResponse };
