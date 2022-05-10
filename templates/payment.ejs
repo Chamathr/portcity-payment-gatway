@@ -49,7 +49,7 @@
             // Compare with the resultIndicator saved in the completeCallback() method
             if (resultIndicator) {
                 var result = (resultIndicator === data.successIndicator) ? "SUCCESS" : "ERROR";
-                window.location.href = "/process/hostedCheckout/" + data.orderId + "/" + result;
+                window.location.href = "/process/pay/" + data.orderId + "/" + result;
             }
             else {
                 successIndicator = data.successIndicator;
@@ -58,7 +58,7 @@
                 sessionVersion = data.sessionVersion;
                 merchantId = data.merchantId;
 
-                window.location.href = "/process/hostedCheckout/" + data.orderId + "/" + data.successIndicator + "/" + data.sessionId;
+                window.location.href = "/process/pay/" + data.orderId + "/" + data.successIndicator + "/" + data.sessionId;
             }
         }
 
@@ -70,17 +70,20 @@
             $errorAlert.append("<p>" + message + "</p>");
             $errorAlert.show();
         }
-        function cancelCallback() {
-            console.log('Payment cancelled');
-            // Reload the page to generate a new session ID - the old one is out of date as soon as the lightbox is invoked
-            window.location.reload(true);
-        }
+        
+        cancelCallback = "https://google.com"
+        // function cancelCallback() {
+        //     console.log('Payment cancelled');
+        //     // Reload the page to generate a new session ID - the old one is out of date as soon as the lightbox is invoked
+        //     window.location.reload(true);
+        // }
+
         // This handles the response from Hosted Checkout and redirects to the appropriate endpoint
         function completeCallback(response) {
             // Save the resultIndicator
             resultIndicator = response;
             var result = (resultIndicator === successIndicator) ? "SUCCESS" : "ERROR";
-            window.location.href = "/process/hostedCheckout/" + orderId + "/" + result;
+            window.location.href = "/process/pay/" + orderId + "/" + result;
         }
         /*function randomId() {
             var chars = "0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ", length = 10;

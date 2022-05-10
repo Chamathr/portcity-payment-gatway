@@ -161,5 +161,9 @@ const getResponse = async (request, response, next) => {
 
 };
 
+const cancelProcess = (request, response, next) => {
+    response.redirect('https://google.com')
+}
 
-module.exports = { makePayment, getResponse };
+
+module.exports = { makePayment, getResponse, cancelProcess };
