@@ -1,26 +1,28 @@
 <% include ./partials/header %>
 
-    <div class="col-12">
+    <script>
+        window.onload = function (event) {
+            Checkout.showPaymentPage()
+        };
+    </script>
+
+    <!-- <div class="col-12">
         <div class="row">
             <div class="contents col-12">
                 <div class="col-md-12">
-                    <div class="container mt-5">
+                    <div class="container">
                         <div class="row">
-                            <div class="col">
-                                <input id="lightbox-with-session" type="button" class="btn btn-primary mr-2"
-                                    value="Proceed the payment(Popup)" onclick="Checkout.showLightbox();" />
-                            </div>
-                            <div class="col">
-                                <input id="page-with-session" type="button" class="btn btn-primary"
+                          <div class="col text-center">
+                            <input id="page-with-session" type="button" class="btn btn-primary"
                                     value="Proceed the payment" onclick="Checkout.showPaymentPage();" />
-                            </div>
+                          </div>
                         </div>
-                    </div>
+                      </div>
                 </div>
             </div>
         </div>
-        <!-- row -->
-    </div>
+    </div> -->
+
     <script src="<%= baseUrl %>/checkout/version/<%= apiVersion %>/checkout.js" data-error="errorCallback"
         data-cancel="cancelCallback" data-beforeRedirect="beforeRedirect" data-afterRedirect="afterRedirect"
         data-complete="completeCallback">
@@ -91,7 +93,7 @@
             order: {
                 amount: function () {
                     //Dynamic calculation of amount
-                    return 50;
+                    return 20;
                 },
                 currency: 'LKR',
                 description: 'Ordered goods'

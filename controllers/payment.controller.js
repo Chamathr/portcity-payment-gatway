@@ -2,6 +2,8 @@ var gatewayService = require('../service/gatewayService');
 var utils = require('../scripts/util/commonUtils');
 var view_path = '../templates';
 var config = require('../scripts/config/config');
+const { PrismaClient } = require('@prisma/client')
+const prisma = new PrismaClient()
 require('dotenv').config()
 
 /**
@@ -15,17 +17,17 @@ const makePayment = async (request, response, next) => {
         "apiOperation": "CREATE_CHECKOUT_SESSION",
         "order": {
             "id": orderId,
-            "currency": utils.getCurrency(),
+            "currency": utils.getCurrency()
         },
         "interaction": {
             "operation": "AUTHORIZE",
-            // "returnUrl": "https://webhook.site/d0a1663d-e5e3-4a9e-858f-1df34b7c38f6"
         }
     }
+    
     const apiRequest = { orderId: orderId };
     const requestUrl = gatewayService.getRequestUrl("REST", apiRequest);
     try {
-        gatewayService.getSession(requestData, (result) => {
+        gatewayService.getSession(requestData, async (result) => {
             response.render(view_path + '/payment', {
                 "baseUrl": config.TEST_GATEWAY.BASEURL,
                 "apiVersion": config.TEST_GATEWAY.API_VERSION,
@@ -38,7 +40,6 @@ const makePayment = async (request, response, next) => {
                     "version": result.session.version
                 },
                 "successIndicator": result.successIndicator,
-                // "returnUrl": '/process/hostedCheckout/'
             });
             next();
         });
@@ -49,7 +50,9 @@ const makePayment = async (request, response, next) => {
     }
 
 };
-
+const test = (request, response, next) => {
+    response.render(view_path + '/error')
+}
 // router.get('/hostedCheckout/:orderId/:successIndicator/:sessionId', function (request, response, next) {
 //     var sessionIndicator = request.params.successIndicator;
 //     var orderId = request.params.orderId;
@@ -81,13 +84,23 @@ const makePayment = async (request, response, next) => {
 * @return for hostedCheckoutReceipt page or error page
 */
 const getResponse = async (request, response, next) => {
+    
     const result = request.params.result;
     const orderId = request.params.orderId;
     try {
         if (result == "SUCCESS") {
+
+            await prisma.payment.create({
+                data: {
+                    payment_id: orderId,
+                    payment_status: 'PENDING'
+                }
+            })
+
             const apiRequest = { orderId: orderId };
             const requestUrl = gatewayService.getRequestUrl("REST", apiRequest);
-            gatewayService.paymentResult(requestUrl, (error, result) => {
+            await gatewayService.paymentResult(requestUrl, async (error, result) => {
+
                 if (error) {
                     const reserror = {
                         error: true,
@@ -97,6 +110,7 @@ const getResponse = async (request, response, next) => {
                         field: null,
                         validationType: null
                     }
+            
                     response.status(500).send(reserror);
                 } else {
                     const ressuccess = {
@@ -105,8 +119,15 @@ const getResponse = async (request, response, next) => {
                         message: "Your transaction was successfully completed",
                         resbody: JSON.parse(result)
                     }
-                    // response.render(view_path + '/hostedCheckoutReceipt', { title: "hostedCheckoutReceipt", resbody: ressuccess });
-                    // response.send(ressuccess)
+               
+                    await prisma.payment.update(
+                        {
+                            where: { payment_id: orderId },
+                            data: {
+                                payment_status: 'SUCCESS'
+                            }
+                        }
+                    )
                     response.redirect('https://www.espncricinfo.com/')
                 }
             });
@@ -119,14 +140,25 @@ const getResponse = async (request, response, next) => {
                 field: null,
                 validationType: null
             }
+
+            await prisma.users.update(
+                {
+                    where: { payment_id: orderId },
+                    data: {
+                        payment_status: 'FAIL'
+                    }
+                }
+            )
+         
             response.status(500).send(reserror);
+
             next();
         }
     }
-    catch(error){
+    catch (error) {
         response.status(500).send(error);
     }
-    
+
 };
 
 
