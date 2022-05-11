@@ -2,8 +2,6 @@ var gatewayService = require('../service/gatewayService');
 var utils = require('../scripts/util/commonUtils');
 var view_path = '../templates';
 var config = require('../scripts/config/config');
-const { PrismaClient } = require('@prisma/client')
-const prisma = new PrismaClient()
 require('dotenv').config()
 
 /**
@@ -23,7 +21,7 @@ const makePayment = async (request, response, next) => {
             "operation": "AUTHORIZE",
         }
     }
-    
+
     const apiRequest = { orderId: orderId };
     const requestUrl = gatewayService.getRequestUrl("REST", apiRequest);
     try {
@@ -50,9 +48,7 @@ const makePayment = async (request, response, next) => {
     }
 
 };
-const test = (request, response, next) => {
-    response.render(view_path + '/error')
-}
+
 // router.get('/hostedCheckout/:orderId/:successIndicator/:sessionId', function (request, response, next) {
 //     var sessionIndicator = request.params.successIndicator;
 //     var orderId = request.params.orderId;
@@ -84,7 +80,10 @@ const test = (request, response, next) => {
 * @return for hostedCheckoutReceipt page or error page
 */
 const getResponse = async (request, response, next) => {
-    
+
+    const { PrismaClient } = require('@prisma/client')
+    const prisma = new PrismaClient()
+
     const result = request.params.result;
     const orderId = request.params.orderId;
     try {
@@ -110,7 +109,7 @@ const getResponse = async (request, response, next) => {
                         field: null,
                         validationType: null
                     }
-            
+
                     response.status(500).send(reserror);
                 } else {
                     const ressuccess = {
@@ -119,7 +118,7 @@ const getResponse = async (request, response, next) => {
                         message: "Your transaction was successfully completed",
                         resbody: JSON.parse(result)
                     }
-               
+
                     await prisma.payment.update(
                         {
                             where: { payment_id: orderId },
@@ -149,7 +148,7 @@ const getResponse = async (request, response, next) => {
                     }
                 }
             )
-         
+
             response.status(500).send(reserror);
 
             next();
@@ -161,9 +160,5 @@ const getResponse = async (request, response, next) => {
 
 };
 
-const cancelProcess = (request, response, next) => {
-    response.redirect('https://google.com')
-}
 
-
-module.exports = { makePayment, getResponse, cancelProcess };
+module.exports = { makePayment, getResponse };

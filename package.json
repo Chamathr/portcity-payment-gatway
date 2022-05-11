@@ -6,7 +6,7 @@
     "start": "node ./bin/www"
   },
   "dependencies": {
-    "@prisma/client": "^3.0.2",
+    "@prisma/client": "^3.13.0",
     "body-parser": "^1.15.2",
     "bootstrap": "*",
     "client-certificate-auth": "^0.3.0",
