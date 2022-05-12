@@ -81,9 +81,6 @@ const makePayment = async (request, response, next) => {
 */
 const getResponse = async (request, response, next) => {
 
-    const { PrismaClient } = require('@prisma/client')
-    const prisma = new PrismaClient()
-
     const result = request.params.result;
     const orderId = request.params.orderId;
     try {
