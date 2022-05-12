@@ -89,13 +89,6 @@ const getResponse = async (request, response, next) => {
     try {
         if (result == "SUCCESS") {
 
-            await prisma.payment.create({
-                data: {
-                    payment_id: orderId,
-                    payment_status: 'PENDING'
-                }
-            })
-
             const apiRequest = { orderId: orderId };
             const requestUrl = gatewayService.getRequestUrl("REST", apiRequest);
             await gatewayService.paymentResult(requestUrl, async (error, result) => {
@@ -119,14 +112,6 @@ const getResponse = async (request, response, next) => {
                         resbody: JSON.parse(result)
                     }
 
-                    await prisma.payment.update(
-                        {
-                            where: { payment_id: orderId },
-                            data: {
-                                payment_status: 'SUCCESS'
-                            }
-                        }
-                    )
                     response.redirect('https://www.espncricinfo.com/')
                 }
             });
@@ -139,15 +124,6 @@ const getResponse = async (request, response, next) => {
                 field: null,
                 validationType: null
             }
-
-            await prisma.users.update(
-                {
-                    where: { payment_id: orderId },
-                    data: {
-                        payment_status: 'FAIL'
-                    }
-                }
-            )
 
             response.status(500).send(reserror);
 
