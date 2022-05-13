@@ -17,18 +17,29 @@ const makePayment = async (request, response, next) => {
         "apiOperation": "CREATE_CHECKOUT_SESSION",
         "order": {
             "id": orderId,
+            "amount": 499,
+            "currency": 'LKR',
+            "description": 'Payment details',
             "currency": utils.getCurrency()
         },
         "interaction": {
+            "merchant": config.TEST_GATEWAY.MERCHANTID,
             "operation": "AUTHORIZE",
-        }
+            "merchant": {
+                "name": 'Merchant Name',
+                "address": {
+                    "line1": '200 Sample St',
+                    "line2": '1234 Example Town'
+                }
+            }
+        },
     }
 
     const apiRequest = { orderId: orderId };
     const requestUrl = gatewayService.getRequestUrl("REST", apiRequest);
     try {
         gatewayService.getSession(requestData, async (result) => {
-            response.send(result);
+            response.send(`https://portcitcommercialpay.z19.web.core.windows.net/?userId=${orderId}&sessionId=${result.session.id}&successIndicator=${result.successIndicator}`)
         });
     }
     catch (error) {
@@ -38,28 +49,6 @@ const makePayment = async (request, response, next) => {
 
 };
 
-// router.get('/hostedCheckout/:orderId/:successIndicator/:sessionId', function (request, response, next) {
-//     var sessionIndicator = request.params.successIndicator;
-//     var orderId = request.params.orderId;
-//     var sessionId = request.params.sessionId;
-//     var resdata = {
-//         "orderId": orderId,
-//         "sessionId": sessionId,
-//         "baseUrl": config.TEST_GATEWAY.BASEURL,
-//         "apiVersion": config.TEST_GATEWAY.API_VERSION,
-//         "merchant": '',
-//         "result": '',
-//         "session": {
-//             "id": sessionId,
-//             "updateStatus": '',
-//             "version": ''
-//         },
-//         "successIndicator": sessionIndicator,
-//         "returnUrl": '/process/hostedCheckout/'
-//         "returnUrl": "https://webhook.site/d0a1663d-e5e3-4a9e-858f-1df34b7c38f6"
-//     };
-//     response.render(view_path + '/hostedCheckout', resdata);
-// });
 /**
 * This method receives the callback from the Hosted Checkout redirect. It looks up the order using the RETRIEVE_ORDER operation and
 * displays either the receipt or an error page.
@@ -156,20 +145,5 @@ const redirectPage = async (reques, response) => {
     });
 }
 
-const pay = async (request, response, next) => {
 
-    const data = {
-        amount: 444
-    }
-
-    var text = 555;
-    var key = CryptoJS.enc.Base64.parse("253D3FB468A0E24677C28A624BE0F939");
-    var iv = CryptoJS.enc.Base64.parse("1583288699248111");
-    var encrypted = CryptoJS.AES.encrypt(text, key, { iv: iv });
-    
-    const res = `https://portcitcommercialpay.z19.web.core.windows.net/userData=${encrypted}`
-    response.send(res)
-
-};
-
-module.exports = { makePayment, getResponse, redirectPage, pay };
+module.exports = { makePayment, getResponse, redirectPage };
