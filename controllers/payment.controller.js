@@ -3,6 +3,9 @@ var utils = require('../scripts/util/commonUtils');
 var view_path = '../templates';
 var config = require('../scripts/config/config');
 require('dotenv').config()
+const { PrismaClient } = require('@prisma/client')
+const prisma = new PrismaClient()
+var CryptoJS = require("crypto-js");
 
 /**
 * Display page for Hosted Checkout operation
@@ -10,7 +13,48 @@ require('dotenv').config()
 * @return response for hostedCheckout.ejs
 */
 const makePayment = async (request, response, next) => {
-    const orderId = utils.keyGen(10);
+
+    const queryData = request.query.userData;
+
+    console.log('121')
+
+    const data = {
+        'userId': '059',
+        'amount': 600
+      }
+    var ciphertext = (CryptoJS.AES.encrypt(JSON.stringify(data), 'portcity'))
+
+    console.log('a', ciphertext)
+    console.log('b', queryData)
+
+    // Decrypt
+    var bytes = CryptoJS.AES.decrypt(ciphertext, 'portcity');
+    var originalText = (bytes.toString(CryptoJS.enc.Utf8));
+    // const originalTextReplace = originalText.replace('.1.','+').replace('.2.','&')
+    const txt = JSON.parse(originalText)
+
+    console.log('1', txt)
+
+    const orderId = txt.userId
+    const amount = txt.amount
+
+    // console.log(1, ciphertext)
+    // console.log(2, txt.userId)
+
+    const userIdExists = await prisma.payment.findUnique({
+        where: {
+            payment_id: orderId
+        }
+    })
+    if (!userIdExists) {
+        await prisma.payment.create({
+            data: {
+                payment_id: orderId,
+                payment_status: 'PENDING'
+            }
+        })
+    }
+
     const requestData = {
         "apiOperation": "CREATE_CHECKOUT_SESSION",
         "order": {
@@ -38,6 +82,7 @@ const makePayment = async (request, response, next) => {
                     "version": result.session.version
                 },
                 "successIndicator": result.successIndicator,
+                "amount": amount
             });
             next();
         });
@@ -49,28 +94,6 @@ const makePayment = async (request, response, next) => {
 
 };
 
-// router.get('/hostedCheckout/:orderId/:successIndicator/:sessionId', function (request, response, next) {
-//     var sessionIndicator = request.params.successIndicator;
-//     var orderId = request.params.orderId;
-//     var sessionId = request.params.sessionId;
-//     var resdata = {
-//         "orderId": orderId,
-//         "sessionId": sessionId,
-//         "baseUrl": config.TEST_GATEWAY.BASEURL,
-//         "apiVersion": config.TEST_GATEWAY.API_VERSION,
-//         "merchant": '',
-//         "result": '',
-//         "session": {
-//             "id": sessionId,
-//             "updateStatus": '',
-//             "version": ''
-//         },
-//         "successIndicator": sessionIndicator,
-//         "returnUrl": '/process/hostedCheckout/'
-//         "returnUrl": "https://webhook.site/d0a1663d-e5e3-4a9e-858f-1df34b7c38f6"
-//     };
-//     response.render(view_path + '/hostedCheckout', resdata);
-// });
 /**
 * This method receives the callback from the Hosted Checkout redirect. It looks up the order using the RETRIEVE_ORDER operation and
 * displays either the receipt or an error page.
@@ -81,20 +104,10 @@ const makePayment = async (request, response, next) => {
 */
 const getResponse = async (request, response, next) => {
 
-    const { PrismaClient } = require('@prisma/client')
-    const prisma = new PrismaClient()
-
     const result = request.params.result;
     const orderId = request.params.orderId;
     try {
         if (result == "SUCCESS") {
-
-            await prisma.payment.create({
-                data: {
-                    payment_id: orderId,
-                    payment_status: 'PENDING'
-                }
-            })
 
             const apiRequest = { orderId: orderId };
             const requestUrl = gatewayService.getRequestUrl("REST", apiRequest);
