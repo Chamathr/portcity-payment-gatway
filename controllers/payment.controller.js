@@ -4,6 +4,7 @@ var view_path = '../templates';
 var config = require('../scripts/config/config');
 require('dotenv').config()
 var fs=require('fs');
+var CryptoJS = require("crypto-js");
 
 /**
 * Display page for Hosted Checkout operation
@@ -161,12 +162,12 @@ const pay = async (request, response, next) => {
         amount: 444
     }
 
-    var text = "My Secret text......";
+    var text = 555;
     var key = CryptoJS.enc.Base64.parse("253D3FB468A0E24677C28A624BE0F939");
-    var iv = CryptoJS.enc.Base64.parse("                ");
+    var iv = CryptoJS.enc.Base64.parse("1583288699248111");
     var encrypted = CryptoJS.AES.encrypt(text, key, { iv: iv });
     
-    const res = `https://portcitcommercialpay.z19.web.core.windows.net/userData=${}`
+    const res = `https://portcitcommercialpay.z19.web.core.windows.net/userData=${encrypted}`
     response.send(res)
 
 };
