@@ -1,49 +1,37 @@
 <html>
 
-<head>
-    <script src="https://cbcmpgs.gateway.mastercard.com/checkout/version/61/checkout.js" data-error="errorCallback"
-        data-cancel="cancelCallback">
-        </script>
-    <script type="text/javascript">
-        function errorCallback(error) {
-            console.log(JSON.stringify(error));
-        }
-        function cancelCallback() {
-            console.log('Payment cancelled');
-        }
+<script>
+    window.onload = function (event) {
+        Checkout.showPaymentPage()
+    };
+</script>
 
-        Checkout.configure({
-            // merchant: 'TESTCOMTESIPGLKR',
-            order: {
-                amount: function () {
-                    //Dynamic calculation of amount
-                    return 100;
-                },
-                currency: 'LKR',
-                description: 'Payment details'
-                //id: randomId()
-            },
-            session: {
-                id: 'SESSION0002298039027G9107229H30',
-            },
-            interaction: {
-                merchant: {
-                    name: 'Merchant Name',
-                    address: {
-                        line1: '200 Sample St',
-                        line2: '1234 Example Town'
-                    }
-                }
-            }
-        });
+
+<script src="https://cbcmpgs.gateway.mastercard.com/checkout/version/61/checkout.js" data-error="errorCallback"
+    data-cancel="cancelCallback" >
     </script>
-</head>
 
-<body>
-    Click one of below buttons to start payment process…
-    <input type="button" value="Pay with Lightbox" onclick="Checkout.showLightbox();" />
-    <input type="button" value="Pay with Payment Page" onclick="Checkout.showPaymentPage();" />
+<script type="text/javascript">
+    function errorCallback(error) {
+        console.log(JSON.stringify(error));
+    }
+    function cancelCallback() {
+        console.log('Payment cancelled');
+    }
 
-</body>
+    function completeCallback(response) {
+        window.location.href = `https://9ec2-2407-c00-d001-6aef-48c2-e30f-f35a-a8d5.in.ngrok.io/process/pay/response`;
+
+    }
+
+    Checkout.configure({
+        // merchant: merchantId,yy
+        session: {
+            id: 'SESSION0002192500198K1081916M16'
+        }
+    });
+
+</script>
+
 
 </html>

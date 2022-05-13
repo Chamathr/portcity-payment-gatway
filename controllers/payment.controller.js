@@ -3,8 +3,9 @@ var utils = require('../scripts/util/commonUtils');
 var view_path = '../templates';
 var config = require('../scripts/config/config');
 require('dotenv').config()
-var fs=require('fs');
-var CryptoJS = require("crypto-js");
+var fs = require('fs');
+const { PrismaClient } = require('@prisma/client')
+const prisma = new PrismaClient()
 
 /**
 * Display page for Hosted Checkout operation
@@ -13,10 +14,18 @@ var CryptoJS = require("crypto-js");
 */
 const makePayment = async (request, response, next) => {
     const orderId = utils.keyGen(10);
+
+    await prisma.payment.create({
+        data: {
+            payment_id: orderId,
+            payment_status: 'PENDING'
+        }
+    })
+
     const requestData = {
         "apiOperation": "CREATE_CHECKOUT_SESSION",
         "order": {
-            "id": orderId,
+            "id": '78',
             "amount": 499,
             "currency": 'LKR',
             "description": 'Payment details',
@@ -59,79 +68,44 @@ const makePayment = async (request, response, next) => {
 */
 const getResponse = async (request, response, next) => {
 
-    const { PrismaClient } = require('@prisma/client')
-    const prisma = new PrismaClient()
-
-    const result = request.params.result;
     const orderId = request.params.orderId;
     try {
-        if (result == "SUCCESS") {
+        const apiRequest = { orderId: orderId };
+        const requestUrl = gatewayService.getRequestUrl("REST", apiRequest);
+        await gatewayService.paymentResult(requestUrl, async (error, result) => {
 
-            await prisma.payment.create({
-                data: {
-                    payment_id: orderId,
-                    payment_status: 'PENDING'
+            if (error) {
+                const reserror = {
+                    error: true,
+                    title: "hostedCheckoutReceipt",
+                    cause: "Payment was unsuccessful",
+                    explanation: "There was a problem completing your transaction.",
+                    field: null,
+                    validationType: null
                 }
-            })
 
-            const apiRequest = { orderId: orderId };
-            const requestUrl = gatewayService.getRequestUrl("REST", apiRequest);
-            await gatewayService.paymentResult(requestUrl, async (error, result) => {
+                response.status(500).send(reserror);
+            } else {
+                const ressuccess = {
+                    error: false,
+                    cause: "Payment was successful",
+                    message: "Your transaction was successfully completed",
+                    resbody: JSON.parse(result)
+                }
 
-                if (error) {
-                    const reserror = {
-                        error: true,
-                        title: "hostedCheckoutReceipt",
-                        cause: "Payment was unsuccessful",
-                        explanation: "There was a problem completing your transaction.",
-                        field: null,
-                        validationType: null
-                    }
-
-                    response.status(500).send(reserror);
-                } else {
-                    const ressuccess = {
-                        error: false,
-                        cause: "Payment was successful",
-                        message: "Your transaction was successfully completed",
-                        resbody: JSON.parse(result)
-                    }
-
-                    await prisma.payment.update(
-                        {
-                            where: { payment_id: orderId },
-                            data: {
-                                payment_status: 'SUCCESS'
-                            }
+                await prisma.payment.update(
+                    {
+                        where: { payment_id: orderId },
+                        data: {
+                            payment_status: 'SUCCESS'
                         }
-                    )
-                    response.redirect('https://www.espncricinfo.com/')
-                }
-            });
-        } else {
-            const reserror = {
-                error: true,
-                title: "hostedCheckoutReceipt",
-                cause: "Payment was unsuccessful",
-                explanation: "There was a problem completing your transaction.",
-                field: null,
-                validationType: null
-            }
-
-            await prisma.users.update(
-                {
-                    where: { payment_id: orderId },
-                    data: {
-                        payment_status: 'FAIL'
                     }
-                }
-            )
-
-            response.status(500).send(reserror);
-
-            next();
-        }
+                )
+                response.redirect('https://www.espncricinfo.com/')
+            }
+        });
     }
+
     catch (error) {
         response.status(500).send(error);
     }
@@ -139,7 +113,7 @@ const getResponse = async (request, response, next) => {
 };
 
 const redirectPage = async (reques, response) => {
-    data = fs.readFile('D:/Projeccts/Port City/api/commercial-payment/controllers/index.html',  (err, data) => {
+    data = fs.readFile('D:/Projeccts/Port City/api/commercial-payment/controllers/test.html', (err, data) => {
         response.setHeader('Content-Type', 'text/html');
         response.send(data);
     });
