@@ -1,0 +1,49 @@
+<html>
+
+<head>
+    <script src="https://cbcmpgs.gateway.mastercard.com/checkout/version/61/checkout.js" data-error="errorCallback"
+        data-cancel="cancelCallback">
+        </script>
+    <script type="text/javascript">
+        function errorCallback(error) {
+            console.log(JSON.stringify(error));
+        }
+        function cancelCallback() {
+            console.log('Payment cancelled');
+        }
+
+        Checkout.configure({
+            merchant: 'TESTCOMTESIPGLKR',
+            order: {
+                amount: function () {
+                    //Dynamic calculation of amount
+                    return 100;
+                },
+                currency: 'LKR',
+                description: 'Payment details'
+                //id: randomId()
+            },
+            session: {
+                id: 'SESSION0002728414527E5253752H93',
+            },
+            interaction: {
+                merchant: {
+                    name: 'Merchant Name',
+                    address: {
+                        line1: '200 Sample St',
+                        line2: '1234 Example Town'
+                    }
+                }
+            }
+        });
+    </script>
+</head>
+
+<body>
+    Click one of below buttons to start payment process…
+    <input type="button" value="Pay with Lightbox" onclick="Checkout.showLightbox();" />
+    <input type="button" value="Pay with Payment Page" onclick="Checkout.showPaymentPage();" />
+
+</body>
+
+</html>

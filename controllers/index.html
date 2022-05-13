@@ -1,0 +1,148 @@
+<script>
+    window.onload = function (event) {
+        Checkout.showPaymentPage()
+    };
+</script>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/crypto-js/3.1.2/rollups/aes.js" integrity="sha256-/H4YS+7aYb9kJ5OKhFYPUjSJdrtV6AeyJOtTkw6X72o=" crossorigin="anonymous"></script>
+
+<script>
+    const params = new Proxy(new URLSearchParams(window.location.search), {
+        get: (searchParams, prop) => searchParams.get(prop),
+    });
+    // Get the value of "some_key" in eg "https://example.com/?some_key=some_value"
+    let value = params.userData;
+
+    var text = "My Secret text......";
+    var key = CryptoJS.enc.Base64.parse("253D3FB468A0E24677C28A624BE0F939");
+    var iv = CryptoJS.enc.Base64.parse("                ");
+    var encrypted = CryptoJS.AES.encrypt(text, key, { iv: iv });
+    console.log(encrypted.toString());
+
+    var decrypted = CryptoJS.AES.decrypt(encrypted, key, { iv: iv });
+    console.log(decrypted.toString(CryptoJS.enc.Utf8));
+</script>
+
+<!-- <div class="col-12">
+        <div class="row">
+            <div class="contents col-12">
+                <div class="col-md-12">
+                    <div class="container">
+                        <div class="row">
+                          <div class="col text-center">
+                            <input id="page-with-session" type="button" class="btn btn-primary"
+                                    value="Proceed the payment" onclick="Checkout.showPaymentPage();" />
+                          </div>
+                        </div>
+                      </div>
+                </div>
+            </div>
+        </div>
+    </div> -->
+
+<script src="https://cbcmpgs.gateway.mastercard.com/checkout/version/61/checkout.js" data-error="errorCallback"
+    data-cancel="cancelCallback" data-beforeRedirect="beforeRedirect" data-afterRedirect="afterRedirect"
+    data-complete="completeCallback">
+    </script>
+<script inline="javascript">
+    /*<![CDATA[*/
+    var merchantId = 'TESTCOMTESIPGLKR';
+    var sessionId = 'SESSION0002419155083G9719819E41';
+    // var sessionVersion = '<%= session.version%>';
+    var successIndicator = '3ce3674dd4c74c5e';
+    var orderId = '67jjh';
+    /*]]>*/
+    var resultIndicator = null;
+    // This method preserves the current state of successIndicator and orderId, so they're not overwritten when we return to this page after redirect
+    function beforeRedirect() {
+        return {
+            successIndicator: successIndicator,
+            orderId: orderId
+        };
+    }
+    // This method is specifically for the full payment page option. Because we leave this page and return to it, we need to preserve the
+    // state of successIndicator and orderId using the beforeRedirect/afterRedirect option
+    function afterRedirect(data) {
+        // Compare with the resultIndicator saved in the completeCallback() method
+        if (resultIndicator) {
+            var result = (resultIndicator === data.successIndicator) ? "SUCCESS" : "ERROR";
+            // window.location.href = "/process/pay/" + data.orderId + "/" + result;
+            window.location.href = `https://cb8a-112-134-221-189.ap.ngrok.io/process/pay/${data.orderId}/${result}`;
+
+        }
+        else {
+            successIndicator = data.successIndicator;
+            orderId = data.orderId;
+            sessionId = data.sessionId;
+            sessionVersion = data.sessionVersion;
+            merchantId = data.merchantId;
+
+            // window.location.href = "/process/pay/" + data.orderId + "/" + data.successIndicator + "/" + data.sessionId;
+            window.location.href = `https://cb8a-112-134-221-189.ap.ngrok.io/process/pay/${data.orderId}/${data.successIndicator}/${data.sessionId}`;
+
+        }
+    }
+
+    function errorCallback(error) {
+        var message = JSON.stringify(error);
+        $("#loading-bar-spinner").hide();
+        var $errorAlert = $('#error-alert');
+        console.log(message);
+        $errorAlert.append("<p>" + message + "</p>");
+        $errorAlert.show();
+    }
+
+    cancelCallback = "https://google.com"
+    // function cancelCallback() {
+    //     console.log('Payment cancelled');
+    //     // Reload the page to generate a new session ID - the old one is out of date as soon as the lightbox is invoked
+    //     window.location.reload(true);
+    // }
+
+    // This handles the response from Hosted Checkout and redirects to the appropriate endpoint
+    function completeCallback(response) {
+        // Save the resultIndicator
+        resultIndicator = response;
+        var result = (resultIndicator === successIndicator) ? "SUCCESS" : "ERROR";
+        // window.location.href = "/process/pay/" + orderId + "/" + result;
+        window.location.href = `https://cb8a-112-134-221-189.ap.ngrok.io/process/pay/${orderId}/${result}`;
+
+    }
+
+    /*function randomId() {
+        var chars = "0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ", length = 10;
+        var result = '';
+        for (var i = length; i > 0; --i) result += chars[Math.round(Math.random() * (chars.length - 1))];
+        return result;
+    }*/
+    Checkout.configure({
+        merchant: merchantId,
+        order: {
+            amount: function () {
+                //Dynamic calculation of amount
+                return value;
+            },
+            currency: 'LKR',
+            description: 'Payment details'
+            //id: randomId()
+        },
+        session: {
+            id: sessionId,
+            // version: sessionVersion
+        },
+        interaction: {
+            merchant: {
+                name: 'Merchant Name',
+                address: {
+                    line1: '200 Sample St',
+                    line2: '1234 Example Town'
+                }
+            }
+        }
+    });
+</script>
+
+</body>
+</div>
+</div>
+</body>

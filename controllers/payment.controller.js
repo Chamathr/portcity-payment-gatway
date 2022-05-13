@@ -3,6 +3,7 @@ var utils = require('../scripts/util/commonUtils');
 var view_path = '../templates';
 var config = require('../scripts/config/config');
 require('dotenv').config()
+var fs=require('fs');
 
 /**
 * Display page for Hosted Checkout operation
@@ -26,20 +27,7 @@ const makePayment = async (request, response, next) => {
     const requestUrl = gatewayService.getRequestUrl("REST", apiRequest);
     try {
         gatewayService.getSession(requestData, async (result) => {
-            response.render(view_path + '/payment', {
-                "baseUrl": config.TEST_GATEWAY.BASEURL,
-                "apiVersion": config.TEST_GATEWAY.API_VERSION,
-                "orderId": orderId,
-                "merchant": result.merchant,
-                "result": result.result,
-                "session": {
-                    "id": result.session.id,
-                    "updateStatus": result.session.updateStatus,
-                    "version": result.session.version
-                },
-                "successIndicator": result.successIndicator,
-            });
-            next();
+            response.send(result);
         });
     }
     catch (error) {
@@ -160,5 +148,27 @@ const getResponse = async (request, response, next) => {
 
 };
 
+const redirectPage = async (reques, response) => {
+    data = fs.readFile('D:/Projeccts/Port City/api/commercial-payment/controllers/index.html',  (err, data) => {
+        response.setHeader('Content-Type', 'text/html');
+        response.send(data);
+    });
+}
 
-module.exports = { makePayment, getResponse };
+const pay = async (request, response, next) => {
+
+    const data = {
+        amount: 444
+    }
+
+    var text = "My Secret text......";
+    var key = CryptoJS.enc.Base64.parse("253D3FB468A0E24677C28A624BE0F939");
+    var iv = CryptoJS.enc.Base64.parse("                ");
+    var encrypted = CryptoJS.AES.encrypt(text, key, { iv: iv });
+    
+    const res = `https://portcitcommercialpay.z19.web.core.windows.net/userData=${}`
+    response.send(res)
+
+};
+
+module.exports = { makePayment, getResponse, redirectPage, pay };
