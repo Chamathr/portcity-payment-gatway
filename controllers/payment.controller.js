@@ -1,74 +1,78 @@
 var gatewayService = require('../service/gatewayService');
 var utils = require('../scripts/util/commonUtils');
-var view_path = '../templates';
 var config = require('../scripts/config/config');
 require('dotenv').config()
 var fs = require('fs');
 const { PrismaClient } = require('@prisma/client')
 const prisma = new PrismaClient()
 
-/**
-* Display page for Hosted Checkout operation
-*
-* @return response for hostedCheckout.ejs
-*/
-const makePayment = async (request, response, next) => {
-    const orderId = utils.keyGen(10);
+const makePayment = async (req, res, next) => {
 
-    await prisma.payment.create({
-        data: {
-            payment_id: orderId,
-            payment_status: 'PENDING'
+    const amount = req.body.amount;
+    const orderId = req.body.orderId;
+
+    try {
+        const userIdExists = await prisma.payment.findUnique({
+            where: {
+                payment_id: orderId
+            }
+        })
+        if (userIdExists) {
+            return res.send({ message: "user ID already exits" })
         }
-    })
+        else {
+            await prisma.payment.create({
+                data: {
+                    payment_id: orderId,
+                    payment_status: 'PENDING'
+                }
+            })
+        }
+    }
+    catch (error) {
+        return res.status(500).send({ error });
+    }
 
     const requestData = {
         "apiOperation": "CREATE_CHECKOUT_SESSION",
         "order": {
-            "id": '78',
-            "amount": 499,
-            "currency": 'LKR',
+            "id": orderId,
+            "amount": amount,
             "description": 'Payment details',
             "currency": utils.getCurrency()
         },
         "interaction": {
-            "merchant": config.TEST_GATEWAY.MERCHANTID,
+            // "merchant": config.TEST_GATEWAY.MERCHANTID,
             "operation": "AUTHORIZE",
             "merchant": {
-                "name": 'Merchant Name',
-                "address": {
-                    "line1": '200 Sample St',
-                    "line2": '1234 Example Town'
-                }
-            }
+                "name": `USER - ${orderId}`,
+            },
+            "displayControl": {
+                "billingAddress": 'HIDE',
+                "customerEmail": 'HIDE',
+                "orderSummary": 'SHOW',
+                "shipping": 'HIDE'
+            },
+            "returnUrl": `https://2c96-112-134-218-146.ap.ngrok.io/process/pay/response/${orderId}`
         },
     }
 
-    const apiRequest = { orderId: orderId };
-    const requestUrl = gatewayService.getRequestUrl("REST", apiRequest);
     try {
         gatewayService.getSession(requestData, async (result) => {
-            response.send(`https://portcitcommercialpay.z19.web.core.windows.net/?userId=${orderId}&sessionId=${result.session.id}&successIndicator=${result.successIndicator}`)
+            res.send(`https://portcitcommercialpay.z19.web.core.windows.net/?sessionId=${result.session.id}`)
         });
     }
     catch (error) {
-        // response.status(500).send(error);
-        response.render(view_path + '/error')
+        res.status(500).send(error)
     }
 
 };
 
-/**
-* This method receives the callback from the Hosted Checkout redirect. It looks up the order using the RETRIEVE_ORDER operation and
-* displays either the receipt or an error page.
-*
-* @param orderId needed to retrieve order
-* @param result of Hosted Checkout operation (success or error) - sent from hostedCheckout.ejs complete() callback
-* @return for hostedCheckoutReceipt page or error page
-*/
+
 const getResponse = async (request, response, next) => {
 
     const orderId = request.params.orderId;
+    
     try {
         const apiRequest = { orderId: orderId };
         const requestUrl = gatewayService.getRequestUrl("REST", apiRequest);
@@ -84,7 +88,15 @@ const getResponse = async (request, response, next) => {
                     validationType: null
                 }
 
-                response.status(500).send(reserror);
+                await prisma.payment.update(
+                    {
+                        where: { payment_id: orderId },
+                        data: {
+                            payment_status: 'FAIL'
+                        }
+                    }
+                )
+
             } else {
                 const ressuccess = {
                     error: false,
@@ -112,7 +124,7 @@ const getResponse = async (request, response, next) => {
 
 };
 
-const redirectPage = async (reques, response) => {
+const redirectPage = async (request, response) => {
     data = fs.readFile('D:/Projeccts/Port City/api/commercial-payment/controllers/test.html', (err, data) => {
         response.setHeader('Content-Type', 'text/html');
         response.send(data);
